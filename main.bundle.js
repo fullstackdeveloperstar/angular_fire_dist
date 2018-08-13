@@ -402,9 +402,21 @@ var ContractComponent = /** @class */ (function () {
             lng: me.contract.lng,
             address: me.contract.address
         }).then(function (data) {
-            console.log('------------------');
-            console.log(data);
             me.db.object('/users/' + me.contract.agentId + '/gallery/' + data.key)
+                .update({
+                mediaId: data.key
+            });
+        });
+        var galleryphotographer = this.firebase.list('/users/' + this.contract.photographerId + '/gallery').push({
+            mediaId: "",
+            mediaUrl: mediaUrl,
+            timestamp: timestamp,
+            type: 0,
+            lat: me.contract.lat,
+            lng: me.contract.lng,
+            address: me.contract.address
+        }).then(function (data) {
+            me.db.object('/users/' + me.contract.photographerId + '/gallery/' + data.key)
                 .update({
                 mediaId: data.key
             });
