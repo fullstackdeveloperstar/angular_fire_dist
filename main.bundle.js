@@ -265,14 +265,14 @@ var ContractService = /** @class */ (function () {
 /***/ "./src/app/contracts/contract/contract.component.css":
 /***/ (function(module, exports) {
 
-module.exports = ".title {\r\n  font-size: 15px;\r\n  font-weight: 600;\r\n}\r\n\r\n"
+module.exports = ".title {\r\n  font-size: 15px;\r\n  font-weight: 600;\r\n}\r\n\r\n.progress{\r\n  margin-top: 10px;\r\n}"
 
 /***/ }),
 
 /***/ "./src/app/contracts/contract/contract.component.html":
 /***/ (function(module, exports) {
 
-module.exports = "<p><span class=\"title\">UID:</span> {{contract['uid']}}</p>\n<p><span class=\"title\">Address:</span> {{contract['address']}}</p>\n<p><span class=\"title\">AgentId:</span> {{contract['agentId']}}</p>\n<p><span class=\"title\">agentName:</span> {{contract['agentName']}}</p>\n<p><span class=\"title\">budget:</span> {{contract['budget']}}</p>\n<p><span class=\"title\">description:</span> {{contract['description']}}</p>\n<p><span class=\"title\">endDate:</span> {{contract['endDate']}}</p>\n<p><span class=\"title\">escrow:</span> {{contract['escrow']}}</p>\n<p><span class=\"title\">orderDate:</span> {{contract['orderDate']}}</p>\n<p><span class=\"title\">photoAccount:</span> {{contract['photoAccount']}}</p>\n<p><span class=\"title\">photographerId:</span> {{contract['photographerId']}}</p>\n<p><span class=\"title\">photographerName:</span> {{contract['photographerName']}}</p>\n<p><span class=\"title\">status:</span> {{contract['status']}}</p>\n<p><span class=\"title\">title:</span> {{contract['title']}}</p>\n\n<div class=\"form-group\"></div>\n<input type=\"text\" [(ngModel)]=\"file_name\" class=\"form-control\" placeholder=\"File Name\">\n<input type=\"file\" (change)=\"uploads($event)\" accept=\".png,.jpg\" multiple class=\"form-control\">\n<!-- <div class=\"progress\">\n  <div class=\"progress-bar progress-bar-striped bg-success\" role=\"progressbar\" [style.width]=\"(uploadProgress | async) + '%'\"\n    [attr.aria-valuenow]=\"(uploadProgress | async)\" aria-valuemin=\"0\" aria-valuemax=\"100\"></div>\n</div> -->\n\n<div class=\"alert alert-info\" role=\"alert\" *ngIf=\"cur_file_counts == cur_uploaded_files\">\n  Files are uploaded\n</div>"
+module.exports = "<p><span class=\"title\">UID:</span> {{contract['uid']}}</p>\n<p><span class=\"title\">Address:</span> {{contract['address']}}</p>\n<p><span class=\"title\">AgentId:</span> {{contract['agentId']}}</p>\n<p><span class=\"title\">agentName:</span> {{contract['agentName']}}</p>\n<p><span class=\"title\">budget:</span> {{contract['budget']}}</p>\n<p><span class=\"title\">description:</span> {{contract['description']}}</p>\n<p><span class=\"title\">endDate:</span> {{contract['endDate']}}</p>\n<p><span class=\"title\">escrow:</span> {{contract['escrow']}}</p>\n<p><span class=\"title\">orderDate:</span> {{contract['orderDate']}}</p>\n<p><span class=\"title\">photoAccount:</span> {{contract['photoAccount']}}</p>\n<p><span class=\"title\">photographerId:</span> {{contract['photographerId']}}</p>\n<p><span class=\"title\">photographerName:</span> {{contract['photographerName']}}</p>\n<p><span class=\"title\">status:</span> {{contract['status']}}</p>\n<p><span class=\"title\">title:</span> {{contract['title']}}</p>\n\n<div class=\"form-group\"></div>\n<input type=\"text\" [(ngModel)]=\"file_name\" class=\"form-control\" placeholder=\"File Name\">\n<input type=\"file\" (change)=\"uploads($event)\" accept=\".png,.jpg\" multiple class=\"form-control\">\n<div class=\"progress\" *ngFor=\"let progress of progresses\">\n  <div class=\"progress-bar progress-bar-striped bg-success\" role=\"progressbar\" [style.width]=\"(progress | async) + '%'\"\n    [attr.aria-valuenow]=\"(progress | async)\" aria-valuemin=\"0\" aria-valuemax=\"100\"></div>\n</div>\n\n<div class=\"alert alert-info\" role=\"alert\" *ngIf=\"cur_file_counts == cur_uploaded_files\">\n  Files are uploaded\n</div>"
 
 /***/ }),
 
@@ -315,6 +315,7 @@ var ContractComponent = /** @class */ (function () {
         this.cur_file_created = '';
         this.cur_file_counts = 0;
         this.cur_uploaded_files = -1;
+        this.progresses = [];
         this.uid = this.activeRouter.snapshot.params['uid'];
         var reff = this.db.database.ref('contracts/' + this.uid);
         var me = this;
@@ -347,12 +348,17 @@ var ContractComponent = /** @class */ (function () {
         var files_length = files.length;
         this.cur_file_counts = files_length;
         this.cur_uploaded_files = 0;
+        this.progresses = [];
+        for (var index = 0; index < this.cur_file_counts; index++) {
+            this.progresses[index] = 0;
+        }
         console.log(files_length);
         for (var i = 0; i < files_length; i++) {
             console.log(i);
             var id = Math.random().toString(36).substring(2);
             this.ref = this.afStorage.ref('files/' + id);
             this.task = this.ref.put(event.target.files[i]);
+            this.progresses[i] = this.task.percentageChanges();
             var me = this;
             this.task.then(function (data) {
                 var a = data.ref.getDownloadURL();
@@ -471,11 +477,9 @@ var ContractsComponent = /** @class */ (function () {
             // console.log(snapshot.toJSON());
             var x = snapshot.toJSON();
             snapshot.forEach(function (item) {
-                // console.log(item);
-                // console.log(item.key);
-                // console.log(item.toJSON());
                 me.contracts.push(item.toJSON());
             });
+            me.contracts.reverse();
         });
     };
     ContractsComponent.prototype.gotocontract = function (uid) {
