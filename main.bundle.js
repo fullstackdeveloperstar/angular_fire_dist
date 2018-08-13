@@ -238,16 +238,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var ContractService = /** @class */ (function () {
     function ContractService(firebase) {
         this.firebase = firebase;
-        this.contactList = firebase.list('/files');
+        this.fileList = firebase.list('/files');
     }
     ContractService.prototype.insertContact = function (contractId, createdDate, mediaUrl, name, type, uid) {
-        this.contactList.push({
+        return this.fileList.push({
             contractId: contractId,
             createdDate: createdDate,
             mediaUrl: mediaUrl,
             name: name,
             type: type,
-            uid: uid
+            uid: uid,
+            isprivate: 0
         });
     };
     ContractService = __decorate([
@@ -300,12 +301,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 
 var ContractComponent = /** @class */ (function () {
-    function ContractComponent(router, activeRouter, db, afStorage, contractService) {
+    function ContractComponent(router, activeRouter, db, afStorage, contractService, firebase) {
         this.router = router;
         this.activeRouter = activeRouter;
         this.db = db;
         this.afStorage = afStorage;
         this.contractService = contractService;
+        this.firebase = firebase;
         this.uid = '';
         this.downloadURL = '';
         this.cur_file_uid = '';
@@ -358,7 +360,10 @@ var ContractComponent = /** @class */ (function () {
                 var cur_file_created = data.metadata.timeCreated;
                 a.then(function (data) {
                     // me.downloadURL = data;
-                    me.contractService.insertContact(me.uid, cur_file_created, data, me.file_name, 0, cur_file_uid);
+                    me.contractService.insertContact(me.uid, cur_file_created, data, me.file_name, 0, cur_file_uid).then(function (res) {
+                        console.log(res.key);
+                        me.addchildfile(res.key, cur_file_created, data, me.file_name, 0, cur_file_uid);
+                    });
                     me.cur_uploaded_files++;
                 });
             });
@@ -366,6 +371,38 @@ var ContractComponent = /** @class */ (function () {
     };
     ContractComponent.prototype.pushfiledata = function () {
         this.contractService.insertContact(this.uid, this.cur_file_created, this.downloadURL, this.file_name, 0, this.cur_file_uid);
+    };
+    ContractComponent.prototype.addchildfile = function (key, createdDate, mediaUrl, name, type, uid) {
+        var me = this;
+        this.db.object('/contracts/' + this.uid + '/files/' + key)
+            .update({
+            contractId: me.uid,
+            createdDate: createdDate,
+            mediaUrl: mediaUrl,
+            name: name,
+            type: type,
+            uid: uid,
+            isprivate: 0
+        });
+        var event = new Date();
+        var timestamp = event.toISOString();
+        timestamp = timestamp.slice(0, -1);
+        var gallery = this.firebase.list('/users/' + this.contract.agentId + '/gallery').push({
+            mediaId: "",
+            mediaUrl: mediaUrl,
+            timestamp: timestamp,
+            type: 0,
+            lat: me.contract.lat,
+            lng: me.contract.lng,
+            address: me.contract.address
+        }).then(function (data) {
+            console.log('------------------');
+            console.log(data);
+            me.db.object('/users/' + me.contract.agentId + '/gallery/' + data.key)
+                .update({
+                mediaId: data.key
+            });
+        });
     };
     ContractComponent = __decorate([
         Object(__WEBPACK_IMPORTED_MODULE_0__angular_core__["n" /* Component */])({
@@ -377,7 +414,8 @@ var ContractComponent = /** @class */ (function () {
             __WEBPACK_IMPORTED_MODULE_1__angular_router__["a" /* ActivatedRoute */],
             __WEBPACK_IMPORTED_MODULE_2_angularfire2_database__["a" /* AngularFireDatabase */],
             __WEBPACK_IMPORTED_MODULE_3_angularfire2_storage__["a" /* AngularFireStorage */],
-            __WEBPACK_IMPORTED_MODULE_4__contract_service__["a" /* ContractService */]])
+            __WEBPACK_IMPORTED_MODULE_4__contract_service__["a" /* ContractService */],
+            __WEBPACK_IMPORTED_MODULE_2_angularfire2_database__["a" /* AngularFireDatabase */]])
     ], ContractComponent);
     return ContractComponent;
 }());
